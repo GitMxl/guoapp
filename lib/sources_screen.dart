@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'app_build.dart';
 import 'core_bridge.dart';
 import 'local_store.dart';
 import 'models.dart';
+import 'source_gate_dialog.dart';
 import 'source_status.dart';
 
 String sourceTimestamp(DateTime? value) {
@@ -158,6 +160,11 @@ class _SourcesScreenState extends State<SourcesScreen> {
     }
   }
 
+  Future<void> _openSourceGate() async {
+    await showSourceGateDialog(context, widget.store);
+    if (mounted) await _refresh();
+  }
+
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: widget.store,
@@ -183,6 +190,46 @@ class _SourcesScreenState extends State<SourcesScreen> {
               child: ListView(
                 padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
                 children: [
+                  if (allSourcesEnabled)
+                    ListTile(
+                      key: const ValueKey('source-gate-entry'),
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        widget.store.sourcesUnlocked
+                            ? Icons.lock_open_rounded
+                            : Icons.lock_outline_rounded,
+                      ),
+                      title: const Text('站源密码锁'),
+                      subtitle: Text(
+                        widget.store.sourceGateOff
+                            ? '已显示全部授权站源'
+                            : widget.store.sourceGateEnabled
+                            ? widget.store.sourcesUnlocked
+                                  ? '隐藏站源已解锁（本次运行）'
+                                  : '隐藏站源已锁定'
+                            : widget.store.profile.admin
+                            ? '隐藏站源未开放'
+                            : '需管理员开放隐藏站源',
+                      ),
+                      trailing:
+                          widget.store.profile.admin ||
+                              widget.store.sourceGateEnabled
+                          ? const Icon(Icons.chevron_right_rounded)
+                          : null,
+                      onTap:
+                          widget.store.profile.admin ||
+                              widget.store.sourceGateEnabled
+                          ? _openSourceGate
+                          : null,
+                    )
+                  else
+                    const ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.dns_outlined),
+                      title: Text('红果鉴 · 单源版'),
+                      subtitle: Text('仅红果'),
+                    ),
+                  const Divider(),
                   const Padding(
                     padding: EdgeInsets.only(bottom: 16),
                     child: Text(
